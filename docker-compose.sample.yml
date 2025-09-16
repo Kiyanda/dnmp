@@ -8,13 +8,13 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./www:/www
-      - ./services/nginx/ssl:/ssl
-      - ./services/nginx/conf.d:/etc/nginx/conf.d
-      - ./services/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./services/nginx/fastcgi-php.conf:/etc/nginx/fastcgi-php.conf
-      - ./services/nginx/fastcgi_params:/etc/nginx/fastcgi_params
-      - ./logs/nginx:/var/log/nginx
+      - ${SOURCE_DIR}:/www/:rw
+      - ${NGINX_SSL_CERTIFICATE_DIR}:/ssl
+      - ${NGINX_CONFD_DIR}:/etc/nginx/conf.d
+      - ${NGINX_CONF_FILE}:/etc/nginx/nginx.conf
+      - ${NGINX_FASTCGI_PHP_CONF}:/etc/nginx/fastcgi-php.conf
+      - ${NGINX_FASTCGI_PARAMS}:/etc/nginx/fastcgi_params
+      - ${NGINX_LOG_DIR}:/var/log/nginx
     restart: always
     networks:
       - default
@@ -24,17 +24,17 @@ services:
       context: ./services/php82
       args:
         DEBIAN_MIRROR_DOMAIN: deb.debian.org
-        PHP_EXTENSIONS: pdo_mysql mysqli gd curl opcache sockets
+        PHP_EXTENSIONS: "$PHP82_EXTENSIONS"
         TZ: "$TZ"
     container_name: php82
     expose:
       - 9501
     volumes:
-      - ./www:/www
-      - ./services/php82/php.ini:/usr/local/etc/php/php.ini
-      - ./services/php82/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf
-      - ./logs/php82:/var/log/php
-      - ./data/composer:/tmp/composer
+      - ${SOURCE_DIR}:/www/:rw
+      - ${PHP82_PHP_CONF_FILE}:/usr/local/etc/php/php.ini
+      - ${PHP82_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf
+      - ${PHP82_LOG_DIR}:/var/log/php
+      - ${PHP82_DATA_COMPOSER}:/tmp/composer
     restart: always
     cap_add:
       - SYS_PTRACE
@@ -154,15 +154,16 @@ services:
       TZ: "$TZ"
 
   mysql5:
+ #  platform: linux/amd64  # 指定使用 amd64 平台,mac芯片m1-m4需要打开
     image: mysql:${MYSQL5_VERSION}
-    container_name: mysql5
+    container_name: testmysql5
     ports:
       - "${MYSQL5_HOST_PORT}:3306"
     volumes:
       - ${MYSQL5_CONF_FILE}:/etc/mysql/conf.d/mysql.cnf:ro
       - ${DATA_DIR}/mysql5:/var/lib/mysql/:rw
       - ${MYSQL5_LOG_DIR}:/var/log/mysql/:rw
-    restart: always
+
     networks:
       - default
     environment:
